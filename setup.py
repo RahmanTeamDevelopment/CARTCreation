@@ -9,6 +9,6 @@ setup(
     author_email = 'munzmarci@gmail.com',
     license = 'MIT',
     packages=['cartcreation'],
-    scripts=['cart_creation.py'],
+    scripts=['bin/cart_creation.py', 'bin/cart_creation'],
     zip_safe=False
 )

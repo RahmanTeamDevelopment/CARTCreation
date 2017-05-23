@@ -2,123 +2,81 @@
 # Class representing a transcript
 class Transcript(object):
 
-    # Constructor
-    def __init__(self):
-        self.id = ''
-        self.version = '.'
-        self.gene = ''
-        self.chrom = ''
-        self.strand = ''
-        self.exons = []
-        self.cds_exons = []
-        self.utr5_exons = []
-        self.utr3_exons = []
-        self.cds = []
-        self.seq = ''
-
-    # Read from RefSeq db record
-    def read(self, line, build):
+    def __init__(self, line, build):
         cols = line.split()
         self.id = cols[0]
-        self.version = cols[1]
-        self.gene = cols[2]
-        self.seq = cols[5]
+        self.hgncid = None
+        self.cartid = None
 
-        if build == 'GRCh37': mapping_str = cols[6]
-        else: mapping_str = cols[7]
+        mapping_str = cols[6] if build == 'GRCh37' else cols[7]
         mapping = mapping_str.split(';')
-
         self.chrom = mapping[0]
-        self.strand = 1 if mapping[1] == '+' else -1
+        self.strand = mapping[1]
 
-        if self.strand == 1: self.cds = [int(mapping[3]) + 1, int(mapping[4])]
-        else: self.cds = [int(mapping[4]), int(mapping[3]) + 1]
+        if self.strand == '+':
+            self.coding_start = int(mapping[3])
+            self.coding_end = int(mapping[4]) - 1
+        else:
+            self.coding_start = int(mapping[4]) - 1
+            self.coding_end = int(mapping[3])
 
         self.exons = []
         for exonstr in mapping[2].split(','):
-            [s,e] = exonstr.split('-')
-            self.exons.append([int(s)+1, int(e)])
-        self.split_exons()
+            self.exons.append(Exon(exonstr))
 
-    # Split exons to UTR5, CDS and UTR3
-    def split_exons(self):
-        if self.strand == 1:
-            for e in self.exons:
-                if e[1] < self.cds[0]:
-                    self.utr5_exons.append(e)
-
-                elif e[0] > self.cds[1]:
-                    self.utr3_exons.append(e)
-
-                elif e[0] < self.cds[0] and self.cds[0] <= e[1] <= self.cds[1]:
-                    self.utr5_exons.append([e[0], self.cds[0] - 1])
-                    self.cds_exons.append([self.cds[0], e[1]])
-
-                elif self.cds[0] <= e[0] <= self.cds[1] and self.cds[1] < e[1]:
-                    self.cds_exons.append([e[0], self.cds[1]])
-                    self.utr3_exons.append([self.cds[1] + 1, e[1]])
-
-                elif self.cds[0] <= e[0] <= self.cds[1] and self.cds[0] <= e[1] <= self.cds[1]:
-                    self.cds_exons.append(e)
-
-                elif e[0] < self.cds[0] and self.cds[1] < e[1]:
-                    self.utr5_exons.append([e[0], self.cds[0] - 1])
-                    self.cds_exons.append([self.cds[0], self.cds[1]])
-                    self.utr3_exons.append([self.cds[1] + 1, e[1]])
+        if self.strand == '+':
+            self.start = self.exons[0].start
+            self.end = self.exons[-1].end
         else:
-            for e in self.exons:
-                if self.cds[0] < e[0]:
-                    self.utr5_exons.append(e)
+            self.start = self.exons[-1].start
+            self.end = self.exons[0].end
 
-                elif e[1] < self.cds[1]:
-                    self.utr3_exons.append(e)
-
-                elif e[0] < self.cds[1] and self.cds[1] <= e[1] <= self.cds[0]:
-                    self.utr3_exons.append([e[0], self.cds[1] - 1])
-                    self.cds_exons.append([self.cds[1], e[1]])
-
-                elif self.cds[1] <= e[0] <= self.cds[0] and self.cds[0] < e[1]:
-                    self.cds_exons.append([e[0], self.cds[0]])
-                    self.utr5_exons.append([self.cds[0] + 1, e[1]])
-
-                elif self.cds[1] <= e[0] <= self.cds[0] and self.cds[1] <= e[1] <= self.cds[0]:
-                    self.cds_exons.append(e)
-
-                elif e[0] < self.cds[1] and self.cds[0] < e[1]:
-                    self.utr3_exons.append([e[0], self.cds[1] - 1])
-                    self.cds_exons.append([self.cds[1], self.cds[0]])
-                    self.utr5_exons.append([self.cds[0] + 1, e[1]])
-
-    # Return 5' start
-    def utr5_start(self):
-        if self.strand == 1:
-            if len(self.utr5_exons) > 0: return self.utr5_exons[0][0]
-            else: return self.cds_exons[0][0]
-        else:
-            if len(self.utr5_exons) > 0: return self.utr5_exons[0][1]
-            else: return self.cds_exons[0][1]
-
-    # Return 3' end
-    def utr3_end(self):
-        if self.strand == 1:
-            if len(self.utr3_exons) > 0: return self.utr3_exons[-1][1]
-            else: return self.cds_exons[-1][1]
-        else:
-            if len(self.utr3_exons) > 0: return self.utr3_exons[-1][0]
-            else: return self.cds_exons[-1][0]
-
-    # Return UTR_ends
-    def UTR_ends(self):
-        return [self.utr5_start(), self.utr3_end()]
-
-    # Return length of UTR5 exonic content
-    def utr5_exonic_content_length(self):
-        ret = 0
-        for e in self.utr5_exons: ret += e[1]-e[0]+1
+    def cds_regions(self):
+        ret = []
+        coding_5prime = self.coding_start if self.strand == '+' else self.coding_end
+        coding_3prime = self.coding_end if self.strand == '+' else self.coding_start
+        for i in range(len(self.exons)):
+            exon = self.exons[i]
+            if exon.end < coding_5prime or exon.start > coding_3prime:
+                continue
+            cds_start = max(exon.start, coding_5prime)
+            cds_end = min(exon.end, coding_3prime)
+            ret.append((cds_start, cds_end))
         return ret
 
-    # Return length of UTR3 exonic content
-    def utr3_exonic_content_length(self):
-        ret = 0
-        for e in self.utr3_exons: ret += e[1]-e[0]+1
-        return ret
+    def output_genepred(self, outfile):
+        # TODO write this output function
+        record = [self.cartid, self.chrom, self.strand, str(self.start), str(self.end), str(self.coding_start), str(self.coding_end), str(len(self.exons))]
+        outfile.write('\t'.join(record)+'\n')
+
+    def output_gff3(self, outfile):
+        attr = ';'.join(['ID=' + self.cartid, 'HGNCID=' + self.hgncid])
+        outfile.write('\t'.join([self.chrom, '.', 'transcript', str(self.start+1), str(self.end+1), '.', self.strand, '.', attr])+'\n')
+
+        # Exons
+        for i in range(len(self.exons)):
+            exon = self.exons[i]
+            exon_id = 'EXON' + self.cartid[-5:] + '.' + str(i + 1)
+            attr = ';'.join(['ID=' + exon_id, 'Parent=' + self.cartid])
+            outfile.write('\t'.join([self.chrom, '.', 'exon', str(exon.start+1), str(exon.end+1), '.', self.strand, '.', attr])+'\n')
+
+        # CDS
+        cds_regs = self.cds_regions()
+        cdspos = 0
+        for i in range(len(cds_regs)):
+            cds_reg = cds_regs[i]
+
+            cds_id = 'CDS' + self.cartid[-5:] + '.' + str(i + 1)
+            attr = ';'.join(['ID=' + cds_id, 'Parent=' + self.cartid])
+
+            outfile.write('\t'.join([self.chrom, '.', 'CDS', str(cds_reg[0]+1), str(cds_reg[1]+1), '.', self.strand, str(cdspos % 3), attr]) + '\n')
+            cdspos += cds_reg[1] - cds_reg[0] + 1
+
+
+# Class representing an exon
+class Exon(object):
+
+    def __init__(self, s):
+        [s, e] = s.split('-')
+        self.start = int(s)
+        self.end = int(e) - 1
