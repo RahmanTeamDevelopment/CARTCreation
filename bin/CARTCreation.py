@@ -1,7 +1,7 @@
 #!env/bin/python
 
 from optparse import OptionParser
-from cartcreation import runner
+from cartcreation.main import main
 
 # Version
 ver = '0.1.0'
@@ -19,8 +19,6 @@ parser.add_option("--out", dest='out', action='store', help="Output file prefix"
 print '\n'+'='*100
 print 'CARTCreation tool ' + ver
 
-# TODO Write part that prints out a summary of outputs
-
-runner.run(options)
+main(options)
 
 print '\n'+'='*100+'\n'
