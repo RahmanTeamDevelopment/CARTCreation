@@ -30,9 +30,19 @@ def read_excluded_transcripts(fn):
 def output_genepred(transcript, outfile):
     """Output transcript in GenePred format"""
 
-    # TODO write this output function
-    record = [transcript.cartid, transcript.chrom, transcript.strand, str(transcript.start), str(transcript.end), str(transcript.coding_start),
-              str(transcript.coding_end), str(len(transcript.exons))]
+    record = [
+                transcript.cartid,
+                transcript.chrom,
+                transcript.strand,
+                str(transcript.start),
+                str(transcript.end),
+                str(transcript.coding_start),
+                str(transcript.coding_end),
+                str(len(transcript.exons)),
+                ','.join([str(e.start) for e in transcript.exons]),
+                ','.join([str(e.end) for e in transcript.exons])
+            ]
+
     outfile.write('\t'.join(record) + '\n')
 
 
@@ -117,10 +127,8 @@ def main(options):
         # Assign CART ID
         t.cartid = cart_id
 
-
-
         # Output in GenePred and GFF3 formats
-        #t.output_genepred(out_genepred)
+        output_genepred(t, out_genepred)
         output_gff3(t, out_gff)
 
         # Output to list file
