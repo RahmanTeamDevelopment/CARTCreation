@@ -10,7 +10,7 @@ def read_refseqscan_results(fn):
         if line == '' or line.startswith('#'):
             continue
         cols = line.split()
-        ret[cols[0]] = cols[1]
+        ret[cols[0]] = cols[2]
     return ret
 
 
