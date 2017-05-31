@@ -10,7 +10,7 @@ def read_refseqscan_results(fn):
         if line == '' or line.startswith('#'):
             continue
         cols = line.split()
-        ret[cols[0]] = cols[3]
+        ret[cols[0]] = cols[1]
     return ret
 
 
@@ -20,7 +20,8 @@ def read_excluded_transcripts(fn):
     ret = dict()
     for line in open(fn):
         line = line.strip()
-        if line.startswith('#'): continue
+        if line.startswith('#'):
+            continue
         cols = line.split()
         ret[cols[0]] = cols[1]
     return ret
@@ -70,12 +71,15 @@ def main(options):
     refseq_db.read()
 
     # Read excluded transcripts from file
-    excluded = read_excluded_transcripts(options.input[:-3]+'_excluded.txt')
+    excluded = read_excluded_transcripts(options.refsdb[:-3]+'_excluded.txt')
 
     # Read in refseq_scan output
     refseqscan = read_refseqscan_results(options.refss)
 
     # Initialize output files
+    our_list = open(options.out + '.txt', 'w')
+    our_list.write('\t'.join(['#HGNCID', 'CARTID', 'NM', 'GenomeDifference', 'MissingReason']) + '\n')
+
     out_genepred = open(options.out + '.genepred', 'w')
     out_gff = open(options.out + '.gff', 'w')
     out_gff.write('##gff-version 3\n\n')
@@ -92,12 +96,16 @@ def main(options):
         cart_id = cols[1]
         nm_id = cols[2]
 
-        if not refseq_db.contains(nm_id):
-            # TODO Handle this case
+        if nm_id in excluded:
+            if excluded[nm_id] in ['missing_cds', 'missing_sequence', 'missing_version', 'missing_hgncid']:
+                reason = 'incomplete_refseq_record'
+            else:
+                reason = excluded[nm_id]
+            our_list.write('\t'.join([hgnc_id, cart_id, nm_id, 'missing', reason]) + '\n')
             continue
 
-        if nm_id in excluded:
-            # TODO Handle this case
+        if not refseq_db.contains(nm_id):
+            our_list.write('\t'.join([hgnc_id, cart_id, nm_id, 'missing', 'missing_from_refseq_database']) + '\n')
             continue
 
         # ....
@@ -108,10 +116,14 @@ def main(options):
         t.hgncid = hgnc_id
 
         # ...
-        t.output_genepred(out_genepred)
-        t.output_gff3(out_gff)
+        #t.output_genepred(out_genepred)
+        output_gff3(t, out_gff)
+
+        # ...
+        our_list.write('\t'.join([hgnc_id, cart_id, nm_id, refseqscan[nm_id], '.']) + '\n')
 
 
     # Close output files
+    our_list.close()
     out_genepred.close()
     out_gff.close()
