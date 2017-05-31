@@ -39,7 +39,7 @@ def output_genepred(transcript, outfile):
 def output_gff3(transcript, outfile):
     """Output transcript in GFF3 format"""
 
-    attr = ';'.join(['ID=' + transcript.cartid, 'HGNCID=' + transcript.hgncid])
+    attr = ';'.join(['ID=' + transcript.cartid, 'HGNCID=' + transcript.hgnc_id])
     outfile.write('\t'.join([transcript.chrom, '.', 'transcript', str(transcript.start + 1), str(transcript.end + 1), '.', transcript.strand, '.', attr]) + '\n')
 
     # Exons
@@ -58,8 +58,7 @@ def output_gff3(transcript, outfile):
         cds_id = 'CDS' + transcript.cartid[-5:] + '.' + str(i + 1)
         attr = ';'.join(['ID=' + cds_id, 'Parent=' + transcript.cartid])
 
-        outfile.write('\t'.join(
-            [transcript.chrom, '.', 'CDS', str(cds_reg[0] + 1), str(cds_reg[1] + 1), '.', transcript.strand, str(cdspos % 3), attr]) + '\n')
+        outfile.write('\t'.join([transcript.chrom, '.', 'CDS', str(cds_reg[0] + 1), str(cds_reg[1] + 1), '.', transcript.strand, str(cdspos % 3), attr]) + '\n')
         cdspos += cds_reg[1] - cds_reg[0] + 1
 
 
@@ -78,8 +77,7 @@ def main(options):
 
     # Initialize output files
     our_list = open(options.out + '.txt', 'w')
-    our_list.write('\t'.join(['#HGNCID', 'CARTID', 'NM', 'GenomeDifference', 'MissingReason']) + '\n')
-
+    our_list.write('\t'.join(['#HGNC_ID', 'CART_ID', 'NM', 'GenomeDifference', 'MissingReason']) + '\n')
     out_genepred = open(options.out + '.genepred', 'w')
     out_gff = open(options.out + '.gff', 'w')
     out_gff.write('##gff-version 3\n\n')
@@ -108,18 +106,24 @@ def main(options):
             our_list.write('\t'.join([hgnc_id, cart_id, nm_id, 'missing', 'missing_from_refseq_database']) + '\n')
             continue
 
-        # ....
+        # Retrieve transcript from database
         t = refseq_db.by_id(nm_id)
 
-        # ...
-        t.cartid = cart_id
-        t.hgncid = hgnc_id
+        # Checking HGNC ID mismatch
+        if hgnc_id != t.hgnc_id:
+            our_list.write('\t'.join([hgnc_id, cart_id, nm_id, 'missing', 'hgnc_id_mismatch']) + '\n')
+            continue
 
-        # ...
+        # Assign CART ID
+        t.cartid = cart_id
+
+
+
+        # Output in GenePred and GFF3 formats
         #t.output_genepred(out_genepred)
         output_gff3(t, out_gff)
 
-        # ...
+        # Output to list file
         our_list.write('\t'.join([hgnc_id, cart_id, nm_id, refseqscan[nm_id], '.']) + '\n')
 
 
