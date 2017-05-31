@@ -57,7 +57,7 @@ def output_gff3(transcript, outfile):
     # Exons
     for i in range(len(transcript.exons)):
         exon = transcript.exons[i]
-        exon_id = 'EXON' + transcript.cartid[-5:] + '.' + str(i + 1)
+        exon_id = 'EXON' + transcript.cartid[4:] + '.' + str(i + 1)
         attr = ';'.join(['ID=' + exon_id, 'Parent=' + transcript.cartid])
         outfile.write('\t'.join([transcript.chrom, '.', 'exon', str(exon.start + 1), str(exon.end + 1), '.', transcript.strand, '.', attr]) + '\n')
 
@@ -67,7 +67,7 @@ def output_gff3(transcript, outfile):
     for i in range(len(cds_regs)):
         cds_reg = cds_regs[i]
 
-        cds_id = 'CDS' + transcript.cartid[-5:] + '.' + str(i + 1)
+        cds_id = 'CDS' + transcript.cartid[4:] + '.' + str(i + 1)
         attr = ';'.join(['ID=' + cds_id, 'Parent=' + transcript.cartid])
 
         outfile.write('\t'.join([transcript.chrom, '.', 'CDS', str(cds_reg[0] + 1), str(cds_reg[1] + 1), '.', transcript.strand, str(cdspos % 3), attr]) + '\n')
