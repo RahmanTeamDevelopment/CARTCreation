@@ -39,8 +39,9 @@ def output_genepred(transcript, outfile):
                 str(transcript.coding_start),
                 str(transcript.coding_end),
                 str(len(transcript.exons)),
-                ','.join([str(e.start) for e in transcript.exons]),
-                ','.join([str(e.end) for e in transcript.exons])
+                ''.join([str(e.start)+',' for e in transcript.exons]),
+                ''.join([str(e.end)+',' for e in transcript.exons]),
+                transcript.hgnc_id
             ]
 
     outfile.write('\t'.join(record) + '\n')
@@ -89,6 +90,7 @@ def main(options):
     our_list = open(options.out + '.txt', 'w')
     our_list.write('\t'.join(['#HGNC_ID', 'CART_ID', 'NM', 'GenomeDifference', 'MissingReason']) + '\n')
     out_genepred = open(options.out + '.genepred', 'w')
+    out_genepred.write('\t'.join(['#NAME', 'CHROM', 'STRAND', 'START', 'END', 'CDS_START', 'CDS_END', 'EXON_COUNT', 'EXON_STARTS', 'EXON_ENDS', 'HGNC_ID']) + '\n')
     out_gff = open(options.out + '.gff', 'w')
     out_gff.write('##gff-version 3\n\n')
 
