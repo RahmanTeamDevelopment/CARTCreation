@@ -2,6 +2,8 @@
 
 from optparse import OptionParser
 from cartcreation.main import main
+import datetime
+
 
 # Version
 ver = '0.1.0'
@@ -15,9 +17,11 @@ parser.add_option("--refss", dest='refss', action='store', help="refseq_scan out
 parser.add_option("--out", dest='out', action='store', help="Output file prefix")
 (options, args) = parser.parse_args()
 
+
 print '\n'+'='*100
-print 'CARTCreation tool ' + ver
+print 'CARTCreation v'+ver+' started: '+str(datetime.datetime.now())+'\n'
 
 main(options)
 
-print '\n'+'='*100+'\n'
+print '\nFinished: '+str(datetime.datetime.now())
+print '='*100+'\n'

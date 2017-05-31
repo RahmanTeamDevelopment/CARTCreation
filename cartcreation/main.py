@@ -1,4 +1,5 @@
 from utils.transcripts import TranscriptDB
+import sys
 
 
 def read_refseqscan_results(fn):
@@ -79,12 +80,14 @@ def main(options):
     # Read in RefSeq transcript database
     refseq_db = TranscriptDB(options.refsdb)
     refseq_db.read()
+    print 'RefSeq transcript database has been read successfully.'
 
     # Read excluded transcripts from file
     excluded = read_excluded_transcripts(options.refsdb[:-3]+'_excluded.txt')
 
     # Read in refseq_scan output
     refseqscan = read_refseqscan_results(options.refss)
+    print 'RefSeqScan output file has been read successfully.'
 
     # Initialize output files
     our_list = open(options.out + '.txt', 'w')
@@ -95,6 +98,8 @@ def main(options):
     out_gff.write('##gff-version 3\n\n')
 
     # Iterate through input file records
+    sys.stdout.write('\nProcessing input file ...')
+    sys.stdout.flush()
     for line in open(options.input):
 
         line = line.strip()
@@ -106,6 +111,7 @@ def main(options):
         cart_id = cols[1]
         nm_id = cols[2]
 
+        # Transcripts excluded from the RefSeq database by RefSeqDB
         if nm_id in excluded:
             if excluded[nm_id] in ['missing_cds', 'missing_sequence', 'missing_version', 'missing_hgncid']:
                 reason = 'incomplete_refseq_record'
@@ -114,6 +120,7 @@ def main(options):
             our_list.write('\t'.join([hgnc_id, cart_id, nm_id, 'missing', reason]) + '\n')
             continue
 
+        # Transcripts missing from the RefSeq db
         if not refseq_db.contains(nm_id):
             our_list.write('\t'.join([hgnc_id, cart_id, nm_id, 'missing', 'missing_from_refseq_database']) + '\n')
             continue
@@ -136,6 +143,11 @@ def main(options):
         # Output to list file
         our_list.write('\t'.join([hgnc_id, cart_id, nm_id, refseqscan[nm_id], '.']) + '\n')
 
+    print ' - Done.'
+    print '\nOutput files written:'
+    print ' - ' + options.out + '.txt'
+    print ' - ' + options.out + '.genepred'
+    print ' - ' + options.out + '.gff'
 
     # Close output files
     our_list.close()
