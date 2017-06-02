@@ -29,6 +29,10 @@ def read_excluded_transcripts(fn):
 def output_genepred(transcript, outfile):
     """Output transcript in GenePred format"""
 
+    exons = transcript.exons
+    if transcript.strand == '-':
+        exons = exons[::-1]
+
     record = [
                 transcript.cartid,
                 transcript.chrom,
@@ -38,8 +42,8 @@ def output_genepred(transcript, outfile):
                 str(min(transcript.coding_start, transcript.coding_end)),
                 str(max(transcript.coding_start, transcript.coding_end)+1),
                 str(len(transcript.exons)),
-                ''.join([str(e.start)+',' for e in transcript.exons]),
-                ''.join([str(e.end)+',' for e in transcript.exons]),
+                ''.join([str(e.start)+',' for e in exons]),
+                ''.join([str(e.end)+',' for e in exons]),
                 transcript.hgnc_id
             ]
 
