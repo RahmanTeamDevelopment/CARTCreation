@@ -1,4 +1,4 @@
-from utils.transcripts import TranscriptDB
+from tgmi.transcripts import TranscriptDB
 import sys
 import helper
 
