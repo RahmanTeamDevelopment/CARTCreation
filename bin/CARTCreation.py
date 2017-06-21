@@ -6,7 +6,7 @@ import datetime
 
 
 # Version
-ver = '0.1.0'
+ver = '0.1.1'
 
 # Command line argument parsing
 descr = 'CARTCreation v'+ver
